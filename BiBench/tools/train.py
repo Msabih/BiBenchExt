@@ -16,7 +16,7 @@ from bibench.apis import set_random_seed, train_model
 from bibench.datasets import build_dataset
 from bibench.models import build_architecture
 from bibench.utils import collect_env, get_root_logger
-from bibench.ext.coding import BinaryCodebook, CodebookReplacer
+#from bibench.ext.coding import BinaryCodebook, CodebookReplacer
 
 
 def parse_args():
@@ -129,16 +129,16 @@ def main():
     meta['seed'] = args.seed
 
     model = build_architecture(cfg.model)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
-    coder = BinaryCodebook(k=256, max_iter=20)
-    for name, mod in model.named_models():
-        if isinstance(mod, torch.nn.Conv2d):
-            import pdb; pdb.set_trace()
-            weights = getattr(mod, "weights")
-            codebook, encoded_vector = coder.process_weights(weights)
-            setattr(mod, "codebook", codebook)
-            setattr(mod, "encoded_vector", encoded_vector)
+    # coder = BinaryCodebook(k=256, max_iter=20)
+    # for name, mod in model.named_models():
+    #     if isinstance(mod, torch.nn.Conv2d):
+    #         import pdb; pdb.set_trace()
+    #         weights = getattr(mod, "weights")
+    #         codebook, encoded_vector = coder.process_weights(weights)
+    #         setattr(mod, "codebook", codebook)
+    #         setattr(mod, "encoded_vector", encoded_vector)
     model.init_weights()
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
