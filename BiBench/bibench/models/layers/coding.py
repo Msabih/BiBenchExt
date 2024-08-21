@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import math
 from sklearn.cluster import KMeans
 
 class BinaryCodebook:
@@ -12,95 +13,101 @@ class BinaryCodebook:
         return torch.sign(tensor)
 
     def flatten_to_xbit(self, tensor):
+        num_elements = tensor.numel()
+        pad_size = (self.k_bits - (num_elements % self.k_bits)) % self.k_bits
+        device = tensor.device
+        if pad_size == 0:
+            flattened = tensor.view(-1, self.k_bits)
+            return flattened
+        tensor = tensor.view(-1)
+        tensor = torch.cat([tensor, torch.full((pad_size,), 0, dtype=tensor.dtype, device=device)])
         flattened = tensor.view(-1, self.k_bits)
+        del tensor ,pad_size,num_elements
         return flattened
 
-    def initialize_binary_codebook(self, vectors):
-        kmeans = KMeans(n_clusters=self.k, random_state=0).fit(vectors)
-        initial_codebook = np.sign(kmeans.cluster_centers_)
-        return initial_codebook
+    def initialize_binary_codebook(self, vectors,counts):
+        sorted_indices = torch.argsort(counts, descending=True)
+        sorted_unique_tensor = vectors[sorted_indices]
+        top_k_vectors = sorted_unique_tensor[:self.k]
+        del sorted_unique_tensor ,sorted_indices
+        return top_k_vectors
 
-    def refine_codebook(self, vectors, codebook):
-        for _ in range(self.max_iter):
-            distances = np.linalg.norm(vectors[:, None] - codebook, axis=2)
-            labels = np.argmin(distances, axis=1)
-            for i in range(len(codebook)):
-                if np.any(labels == i):
-                    codebook[i] = np.sign(vectors[labels == i].mean(axis=0))
-        return codebook
 
     def encode_vectors(self, vectors, codebook):
-        encoded_vectors = []
-        for vec in vectors:
-            distances = np.linalg.norm(codebook - vec, axis=1)
-            closest_index = np.argmin(distances)
-            encoded_vectors.append(closest_index)
-        return torch.tensor(encoded_vectors, dtype=torch.uint8)
+        # vectors = vectors.to(torch.int32)
+        # codebook= codebook.to(torch.int32)
+        # diff = torch.bitwise_xor(vectors.unsqueeze(1), codebook.unsqueeze(0))
+        # hamming_distances = torch.sum(torch.abs(diff), dim=2)
 
+        tensor1 = vectors.to(torch.float32)
+        tensor2 = codebook.to(torch.float32)
+        diff = tensor1.unsqueeze(1) - tensor2.unsqueeze(0)
+        hamming_distances = torch.linalg.norm(diff, ord=1, dim=2)
+        closest_indices = torch.argmin(hamming_distances, dim=1)
+        closest_indices=closest_indices.to(torch.uint8)
+        del vectors,codebook,diff,hamming_distances
+        return closest_indices
     def process_weights(self, tensor):
-        # Step 1: Binarize the weights
-        binarized_tensor = self.binarize_weights(tensor)
+        with torch.no_grad():
+            # Step 1: Binarize the weights
+            binarized_tensor = self.binarize_weights(tensor)
 
-        # Step 2: Flatten the tensor into x-bit segments
-        flattened_tensor = self.flatten_to_xbit(binarized_tensor)
+            # Step 2: Flatten the tensor into x-bit segments
+            flattened_tensor = self.flatten_to_xbit(binarized_tensor)
 
-        # Step 3: Generate or use codebook based on the number of unique vectors
-        unique_vectors = torch.unique(flattened_tensor, dim=0).detach()
-        if unique_vectors.shape[0] <= 256:
-            codebook = unique_vectors
-            encoded_vectors = self.encode_vectors(flattened_tensor.detach(), codebook)
-        else:
-            initial_codebook = self.initialize_binary_codebook(unique_vectors)
-            refined_codebook = self.refine_codebook(unique_vectors, initial_codebook)
-            codebook = torch.tensor(refined_codebook, dtype=torch.float32)
-            encoded_vectors = self.encode_vectors(flattened_tensor.detach(), codebook.detach())
+            # Step 3: Generate or use codebook based on the number of unique vectors
+            unique_vectors,counts = torch.unique(flattened_tensor, dim=0, return_counts=True)
+            unique_vectors=unique_vectors
+            if unique_vectors.shape[0] <= self.k:
+                codebook = unique_vectors
+                encoded_vectors = self.encode_vectors(flattened_tensor, codebook)
+            else:
+                initial_codebook = self.initialize_binary_codebook(unique_vectors,counts)
+                # refined_codebook = self.refine_codebook(unique_vectors, initial_codebook)
+                codebook = initial_codebook.to(torch.float32)
+                del initial_codebook
+                encoded_vectors = self.encode_vectors(flattened_tensor, codebook)
 
-        # Return the codebook and encoded vectors
-        return codebook, encoded_vectors
+            # Return the codebook and encoded vectors
+            del unique_vectors,flattened_tensor,binarized_tensor
+            return codebook, encoded_vectors
 
 
 class CodebookReplacer:
+ 
     @staticmethod
-    def hamming_distance(a, b):
-        return (a ^ b).sum(dim=-1)
-    @staticmethod
-    def replace_with_codebook( tensor, codebook,k_bits=9):
-        encoded_vectors = []
-        # Flatten the input tensor
-        flattened_tensor = tensor.view(-1, k_bits)  # Assuming the tensor is made up of x-bit vectors
+    def replace_with_codebook( tensor1, tensor2,coder):
+         with torch.no_grad():
+            # Flatten the input tensor
+            flattened_tensor = coder.flatten_to_xbit(tensor1)  # Assuming the tensor is made up of x-bit vectors
 
-        # Initialize the output tensor
-        output_tensor = torch.empty_like(flattened_tensor)
+            # Initialize the output tensor
+            # flattened_tensor = flattened_tensor.to(torch.int32)
+            # tensor2 = tensor2.to(torch.int32)
+            # diff = torch.bitwise_xor(flattened_tensor.unsqueeze(1), tensor2.unsqueeze(0))
+            # hamming_distances = torch.sum(torch.abs(diff), dim=2)
 
-        for i, vec in enumerate(flattened_tensor):
-            # Calculate the Hamming distances between the vector and all codebook entries
-            distances = CodebookReplacer.hamming_distance(vec, codebook)
-            min_distance = distances.min()
-
-            # Find indices of codebook vectors with the smallest distance
-            closest_indices = torch.nonzero(distances == min_distance).squeeze()
-
-            # If there are multiple closest vectors, randomly select one
-            if len(closest_indices) > 1:
-                chosen_index = closest_indices[torch.randint(0, len(closest_indices), (1,)).item()]
-            else:
-                chosen_index = closest_indices.item()
-
-            # Replace the vector in the output tensor
-            encoded_vectors.append(chosen_index)
-            output_tensor[i] = codebook[chosen_index]
-
-
-        # Reshape the output tensor to the original shape of the input tensor
-        output_tensor = output_tensor.view(tensor.shape)
-        return output_tensor,encoded_vectors
-    
+            flattened_tensor = flattened_tensor.to(torch.float32)
+            tensor2 = tensor2.to(torch.float32)
+            diff = flattened_tensor.unsqueeze(1) - tensor2.unsqueeze(0)
+            hamming_distances = torch.linalg.norm(diff, ord=1, dim=2)
+            # Find indices of the minimum Hamming distance for each row in tensor1
+            closest_indices = torch.argmin(hamming_distances, dim=1)
+            closest_indices=closest_indices.to( torch.uint8)
+            del tensor1 ,tensor2, hamming_distances,diff,flattened_tensor
+            return closest_indices
+        
     @staticmethod
     def weight_builder(codebook,encoded_vectors,shape):
-        encoded_vectors = torch.tensor(encoded_vectors, dtype=torch.long)
-        weight_tensor = codebook[encoded_vectors]
-        weight_tensor = weight_tensor.view((shape))
-        return weight_tensor
+        with torch.no_grad():
+            encoded_vectors = encoded_vectors.to(torch.long)
+            weight_tensor = codebook[encoded_vectors]
+            weight_tensor = weight_tensor.view(-1)
+            num_elements= math.prod(shape)
+            weight_tensor=weight_tensor[:num_elements]
+            weight_tensor = weight_tensor.view((shape))
+            del num_elements, encoded_vectors, codebook
+            return weight_tensor
 
 
 

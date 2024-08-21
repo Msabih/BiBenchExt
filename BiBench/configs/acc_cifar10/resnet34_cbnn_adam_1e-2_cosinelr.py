@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/resnet34.py', '../_base_/datasets/cifar10.py',
-    '../_base_/schedules/adam_1e-3_cosinelr_200e.py', '../_base_/default_runtime.py'
+    '../_base_/schedules/adam_1e-2_cosinelr_200e.py', '../_base_/default_runtime.py'
 ]
 
 model = dict(
@@ -12,6 +12,6 @@ model = dict(
             act_cfg=dict(type='Hardtanh', inplace=True)
         ),
         head=dict(num_classes=10)
-      ),
-    init_cfg=dict(type='Pretrained', checkpoint='data/pretrained/cifar10/bnn_epoch_185.pth')
+     )#,
+    # init_cfg=dict(type='Pretrained', checkpoint='data/pretrained/res34_cifar10.pth')
 )

@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from  .coding import *
+from .coding import *
+import random
 
 class CBNNConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=False, dilation=0, transposed=False, output_padding=None, groups=1):
@@ -18,16 +19,18 @@ class CBNNConv2d(nn.Module):
         self.number_of_weights = in_channels * out_channels * kernel_size * kernel_size
         self.shape = (out_channels, in_channels, kernel_size, kernel_size)
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.002 - 0.001, requires_grad=True)
-        self.coder = BinaryCodebook()
+        self.coder = BinaryCodebook(k_bits=12)
         self.register_buffer('codebook', None)
         self.register_buffer('encoded_vector', None)
-        self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
         self.first_iter=True
 
     def forward(self, x):
         if self.training:
-            if not self.first_iter:
-                _ , self.encoded_vector=CodebookReplacer.replace_with_codebook(  self.codebook,k_bits=9)
+            if self.first_iter:
+                self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
+            else:
+                if random.random()>.9: 
+                 self.encoded_vector=CodebookReplacer.replace_with_codebook( self.weight, self.codebook,self.coder)
             binary_input_no_grad = torch.sign(x)
             cliped_input = torch.clamp(x, -1.0, 1.0)
             x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
@@ -37,13 +40,14 @@ class CBNNConv2d(nn.Module):
             cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
             binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
             y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding)
-
+            self.first_iter=False
+            #torch.cuda.empty_cache()
             return y
         else:
+            if self.first_iter:
+                self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
             x = torch.sign(x)
-            encoded_vectors = torch.tensor(self.encoded_vector, dtype=torch.long)
-            binary_weights = self.codebook[encoded_vectors]
-            binary_weights = binary_weights.view((self.shape))
+            binary_weights = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
             y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding)
             return y
            
