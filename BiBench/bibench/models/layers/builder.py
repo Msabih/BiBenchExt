@@ -8,7 +8,7 @@ from .dorefa import DoReFaConv2d, DoReFaConv1d, DoReFaLinear
 from .xnorplusplus import XNORPlusPlusConv2d, XNORPlusPlusConv1d, XNORPlusPlusLinear
 from .recu import ReCUConv2d, ReCUConv1d, ReCULinear
 from .fda import FDAConv2d, FDAConv1d, FDALinear
-from .custom_bnn import CBNNConv2d
+from .custom_bnn import CBNNConv2d ,CBNNConv1d
 from mmcv.cnn import CONV_LAYERS
 
 
@@ -39,6 +39,7 @@ def init_layers():
     CONV_LAYERS.register_module(name='BiRealConv1d', module=BiRealConv1d)
     CONV_LAYERS.register_module(name='XNORConv1d', module=XNORConv1d)
     CONV_LAYERS.register_module(name='BNNConv1d', module=BNNConv1d)
+    CONV_LAYERS.register_module(name='CBNNConv1d', module=CBNNConv1d)
     CONV_LAYERS.register_module(name='ReActConv1d', module=ReActConv1d)
     CONV_LAYERS.register_module(name='DoReFaConv1d', module=DoReFaConv1d)
     CONV_LAYERS.register_module(name='XNORPlusPlusConv1d', module=XNORPlusPlusConv1d)
