@@ -14,7 +14,8 @@ from mmcv.runner import (
     wrap_fp16_model,
 )
 
-sys.path.append("//mnt/localdata/PHD/kiss_brepo/new_package/new_research/BiBench/BiBench/")
+sys.path.append("D:\study\S3\Project thesis\Work\BiBenchExt\BiBench")
+sys.path.append("D:\study\S3\Project thesis\Work\BiBenchExt\Libraries\BiNLP")
 
 from bibench.apis import multi_gpu_test, single_gpu_test
 from bibench.datasets import build_dataloader, build_dataset
@@ -79,7 +80,7 @@ def main():
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
-    cfg.data.test.test_mode = True
+    cfg.data.val.test_mode = True
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
@@ -89,7 +90,7 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # build the dataloader
-    dataset = build_dataset(cfg.data.test)
+    dataset = build_dataset(cfg.data.val)
     # the extra round_up data will be removed during gpu/cpu collect
     data_loader = build_dataloader(
         dataset,

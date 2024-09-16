@@ -5,7 +5,7 @@ data_prefix='data/datasets'
 
 data = dict(
     samples_per_gpu=256,
-    workers_per_gpu=16,
+    workers_per_gpu=4,
     train=dict(
         repo=dataset_repo,
         type=dataset_type,

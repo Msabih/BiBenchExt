@@ -151,7 +151,7 @@ def train_model(model,
         else:
             raise NotImplementedError()
         eval_hook = DistEvalHook if distributed else EvalHook
-        runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
+        runner.register_hook(eval_hook(val_dataloader, **eval_cfg), priority='LOW')
 
     # register extra hooks
     if cfg.get('extra_hooks', None):

@@ -11,6 +11,10 @@ class BNNConv2d(nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        if bias:
+            self.bias = nn.Parameter(torch.zeros(out_channels), requires_grad=True)
+        else:
+            self.bias = None
         self.dilation = dilation
         self.transposed = transposed
         self.output_padding = output_padding
@@ -28,7 +32,7 @@ class BNNConv2d(nn.Module):
         binary_weights_no_grad = torch.sign(real_weights)
         cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
         binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
-        y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding)
+        y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
 
         return y
 

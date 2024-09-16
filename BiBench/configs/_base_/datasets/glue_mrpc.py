@@ -3,7 +3,7 @@ dataset_repo = 'binlp'
 dataset_type = 'GLUEDataset'
 
 data = dict(
-    samples_per_gpu=32,
+    samples_per_gpu=16,
     workers_per_gpu=2,
     persistent_workers=True,
     train=dict(
