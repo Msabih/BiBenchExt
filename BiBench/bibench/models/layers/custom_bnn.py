@@ -12,6 +12,10 @@ class CBNNConv2d(nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        if bias:
+            self.bias = nn.Parameter(torch.zeros(out_channels), requires_grad=True)
+        else:
+            self.bias = None
         self.dilation = dilation
         self.transposed = transposed
         self.output_padding = output_padding
@@ -39,7 +43,7 @@ class CBNNConv2d(nn.Module):
             binary_weights_no_grad = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
             cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
             binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
-            y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding)
+            y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
             self.first_iter=False
          
             return y
@@ -48,7 +52,7 @@ class CBNNConv2d(nn.Module):
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
             x = torch.sign(x)
             binary_weights = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
-            y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding)
+            y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
             return y
            
 
@@ -112,14 +116,43 @@ class BNNLinear(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, binary_act=True):
         super(BNNLinear, self).__init__(in_features, out_features, bias=True)
         self.binary_act = binary_act
-        self.output_ = None
+        #self.output_ = None
+        self.coder = BinaryCodebook(k_bits=12)
+        self.register_buffer('codebook', None)
+        self.register_buffer('encoded_vector', None)
+        self.first_iter=True
 
     def forward(self, input):
-        bw = self.weight
-        ba = input
-        bw = BinaryQuantize().apply(bw)
-        if self.binary_act:
-            ba = BinaryQuantize().apply(ba)
-        output = F.linear(ba, bw, self.bias)
-        self.output_ = output
-        return output
+
+        if self.training:
+            if self.first_iter:
+                self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
+            else:
+                if random.random()>.9: 
+                    self.encoded_vector=CodebookReplacer.replace_with_codebook( self.weight, self.codebook,self.coder)
+        
+            #real_weights = self.weight.view((self.out_features, self.in_features))
+            binary_weights_no_grad = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,(self.out_features, self.in_features))
+            cliped_weights = torch.clamp(self.weight, -1.0, 1.0)
+            bw = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
+          
+            self.first_iter=False
+            ba = input
+            if self.binary_act:
+                ba = BinaryQuantize().apply(ba)
+            output = F.linear(ba, bw, self.bias)
+             #self.output_ = output
+            return output
+
+        else:
+            if self.first_iter:
+                self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
+            bw = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,(self.out_features, self.in_features))
+            ba = input
+            if self.binary_act:
+                ba = BinaryQuantize().apply(ba)
+            output = F.linear(ba, bw, self.bias)
+            return output
+
+
+        

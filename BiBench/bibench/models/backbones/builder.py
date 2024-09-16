@@ -6,8 +6,8 @@ from .resnet_cifar import ResNet_CIFAR
 from .vgg import VGG
 from .ssd_vgg import SSDVGG
 from .reactnet import ReActNet
-
-
+from .mobilenet_v2 import MobileNetV2
+from .mobilenet_v2_minist import MobileNetV2_minist
 def init_backbones():
     model_dict = {
         'BiBench_ResNet': ResNet,
@@ -16,7 +16,9 @@ def init_backbones():
         'BiBench_ResNet_CIFAR': ResNet_CIFAR,
         'BiBench_VGG': VGG,
         'BiBench_SSDVGG': SSDVGG,
-        'BiBench_ReActNet': ReActNet
+        'BiBench_ReActNet': ReActNet,
+        'MobileNetV2' : MobileNetV2,
+        'MobileNetV2_minist' : MobileNetV2_minist
     }
 
     try:
