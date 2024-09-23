@@ -5,13 +5,14 @@ from .coding import *
 import random
 
 class CBNNConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=False, dilation=0, transposed=False, output_padding=None, groups=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=False, dilation=0, transposed=False, output_padding=None, groups=1,k_bits=12):
         super(CBNNConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
+        self.k_bits=k_bits
         if bias:
             self.bias = nn.Parameter(torch.zeros(out_channels), requires_grad=True)
         else:
@@ -23,7 +24,7 @@ class CBNNConv2d(nn.Module):
         self.number_of_weights = in_channels * out_channels * kernel_size * kernel_size
         self.shape = (out_channels, in_channels, kernel_size, kernel_size)
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.002 - 0.001, requires_grad=True)
-        self.coder = BinaryCodebook(k_bits=12)
+        self.coder = BinaryCodebook(k_bits=self.k_bits)
         self.register_buffer('codebook', None)
         self.register_buffer('encoded_vector', None)
         self.first_iter=True

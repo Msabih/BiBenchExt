@@ -18,11 +18,12 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=128,
-    workers_per_gpu=2,
+    workers_per_gpu=1,
     train=dict(
         repo=dataset_repo,type=dataset_type, data_prefix='data/datasets/MINST', pipeline=train_pipeline),
     val=dict(
-        repo=dataset_repo,type=dataset_type, data_prefix='data/datasets/MINST', pipeline=test_pipeline))
+        repo=dataset_repo,type=dataset_type, data_prefix='data/datasets/MINST', pipeline=test_pipeline,
+        test_mode=True))
 evaluation = dict(
     save_best='accuracy_top-1')
 
