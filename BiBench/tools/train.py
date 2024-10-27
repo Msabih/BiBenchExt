@@ -16,7 +16,6 @@ from bibench.apis import set_random_seed, train_model
 from bibench.datasets import build_dataset
 from bibench.models import build_architecture
 from bibench.utils import collect_env, get_root_logger
-#from bibench.ext.coding import BinaryCodebook, CodebookReplacer
 
 
 def parse_args():
