@@ -33,6 +33,7 @@ class CBNNConv2d(nn.Module):
         if self.training:
             if self.first_iter:
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
+                self.first_iter=False
             else:
                 if random.random()>.9: 
                  self.encoded_vector=CodebookReplacer.replace_with_codebook( self.weight, self.codebook,self.coder)
@@ -45,12 +46,12 @@ class CBNNConv2d(nn.Module):
             cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
             binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
             y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
-            self.first_iter=False
-         
+            
             return y
         else:
             if self.first_iter:
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
+                self.first_iter=False
             x = torch.sign(x)
             binary_weights = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
             y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
