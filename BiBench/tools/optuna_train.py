@@ -1,8 +1,10 @@
 import sys
+import json
 sys.path.append(r"./")
 import argparse
 import copy
 import os
+import io
 import os.path as osp
 import time
 import optuna
@@ -46,20 +48,13 @@ def set_nested_attr(obj, attr_string, value):
         obj = getattr(obj, attr)
     setattr(obj, attrs[-1], value)
 
-def size(model):
-    model.eval()
-    param_size= 0
-    for param in model.parameters():
-        param_size += param.nelement() * param.element_size()
-    buffer_size = 0
-    for buffer in model.buffers():
-        buffer_size += buffer.nelement() * buffer.element_size()
-
-    size_all_mb = (param_size + buffer_size) / 1024**2
-   
-
-    print('model size: {:.3f}MB'.format(size_all_mb),)
-    return size_all_mb 
+def size(state_dict):
+    buffer = io.BytesIO()
+    torch.save(state_dict, buffer)
+    size_in_MB = buffer.tell() / (1024 * 1024)  
+    buffer.close()  
+    print('model size: {:.3f}MB'.format(size_in_MB),)
+    return size_in_MB
 
 def define_model(trial,model,targets):
         model_copy = copy.deepcopy(model)
@@ -180,7 +175,7 @@ def main():
     model = build_architecture(cfg.model)
     
     model.init_weights()
-    
+    targets=get_targets(model)
   
 
     datasets = [build_dataset(cfg.data.train)]
@@ -194,17 +189,30 @@ def main():
         cfg.checkpoint_config.meta = dict(
             bibench_version=__version__, config=cfg.pretty_text)
     # # add an attribute for visualization convenience
-
-    train_model_op(
-        model,
-        datasets,
-        cfg,
-        distributed=distributed,
-        validate=(not args.no_validate),
-        timestamp=timestamp,
-        device='cpu' if args.device == 'cpu' else 'cuda',
-        meta=meta)
-
+    def objective(trial):
+        model2 = define_model(trial, model, targets)
+        cfg_=copy.deepcopy(cfg)
+        results=train_model_op(
+            model2,
+            datasets,
+            cfg_,
+            distributed=distributed,
+            validate=(not args.no_validate),
+            timestamp=timestamp,
+            device='cpu' if args.device == 'cpu' else 'cuda',
+            meta=meta)
+        accuracy=results.last_val_accuracy["accuracy_top-1"]
+        model_size=size(model2)
+        return accuracy,model_size
+    work_dir = osp.abspath(cfg.work_dir)
+    save_path = osp.join(work_dir, 'targets.json')
+    with open(save_path, 'w') as f:
+        json.dump(targets, f)
+    storage_path = f"sqlite:///{os.path.join(work_dir, 'db.sqlite3')}"
+    study = optuna.create_study(directions=["maximize","minimize"],storage=storage_path,
+    study_name="accuracy,size"
+)
+    study.optimize(objective, n_trials=50)
 
 if __name__ == '__main__':
     main()

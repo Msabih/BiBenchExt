@@ -23,9 +23,6 @@ class AccuracyHook(Hook):
         self.last_val_accuracy = None
 
     def after_train_epoch(self, runner):
-        # Get the accuracy from the log buffer
-        #if 'accuracy_top-1' in runner.log_buffer.output:
-        print(runner.log_buffer.output)
         self.last_val_accuracy = copy.deepcopy(runner.log_buffer.output)
        
 
