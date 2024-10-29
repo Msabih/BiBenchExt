@@ -24,7 +24,7 @@ class CBNNConv2d(nn.Module):
         self.number_of_weights = in_channels * out_channels * kernel_size * kernel_size
         self.shape = (out_channels, in_channels, kernel_size, kernel_size)
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.002 - 0.001, requires_grad=True)
-        self.coder = BinaryCodebook(k_bits=self.k_bits)
+        #self.coder = BinaryCodebook(k_bits=self.k_bits)
         self.register_buffer('codebook', None)
         self.register_buffer('encoded_vector', None)
         self.first_iter=True
@@ -32,6 +32,7 @@ class CBNNConv2d(nn.Module):
     def forward(self, x):
         if self.training:
             if self.first_iter:
+                self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
             else:
@@ -50,6 +51,7 @@ class CBNNConv2d(nn.Module):
             return y
         else:
             if self.first_iter:
+                self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
             x = torch.sign(x)

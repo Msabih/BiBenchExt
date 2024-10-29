@@ -103,12 +103,12 @@ class MrpcProcessor(DataProcessor):
             if i == 0:
                 continue
             guid = "%s-%s" % (set_type, i)
-            text_a = line[3]
-            text_b = line[4]
+            text_a = line[0]
+            text_b = line[1]
             if set_type == 'test':
                 label = None
             else:
-                label = line[0]
+                label = line[2]
             examples.append(
                 InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
