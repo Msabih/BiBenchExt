@@ -7,7 +7,7 @@ model = dict(
     arch=dict(
         backbone=dict(
             conv2d_cfg=dict(type='CBNNConv2d',k_bits=16),
-            conv1d_cfg=dict(type='BNNConv1d'),
+            conv1d_cfg=dict(type='CBNNConv1d',k_bits=16),
             act_cfg=dict(type='PReLU')
         ),
         init_cfg=dict(type='Pretrained', checkpoint='data/Pretrained/Google speech commands/epoch_200.pth')
