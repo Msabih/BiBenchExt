@@ -23,7 +23,7 @@ from bibench.utils import collect_env, get_root_logger
 def get_targets(model):
     targets=[]
     for k in model.state_dict().keys():
-        if 'conv' in k:
+        if 'conv' in k or 'fc_trans.0' in k or 'fc_trans.4' in k or 'memory.0' in k or 'front_end.3' in k:
             name=k.split(".")
             del name[-1]
             name=".".join(name)
@@ -39,7 +39,7 @@ def check_class(obj, attr_string):
         #     obj=obj[int(attr)]
         # else:    
             obj = getattr(obj, attr)
-    return str(type(obj))== "<class 'bibench.models.layers.custom_bnn.CBNNConv2d'>"    
+    return str(type(obj))== "<class 'bibench.models.layers.custom_bnn.CBNNConv2d'>"  or  str(type(obj))== "<class 'bibench.models.layers.custom_bnn.CBNNConv1d'>"   
 
 
 def set_nested_attr(obj, attr_string, value):
