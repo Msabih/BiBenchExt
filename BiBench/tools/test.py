@@ -13,9 +13,9 @@ from mmcv.runner import (
     load_checkpoint,
     wrap_fp16_model,
 )
-
-sys.path.append("D:\study\S3\Project thesis\Work\BiBenchExt\BiBench")
-sys.path.append("D:\study\S3\Project thesis\Work\BiBenchExt\Libraries\BiNLP")
+sys.path.append(r"./")
+# sys.path.append(r"../")
+# sys.path.append(r"D:\study\S3\Project thesis\Work\BiBenchExt\Libraries\BiNLP")
 
 from bibench.apis import multi_gpu_test, single_gpu_test
 from bibench.datasets import build_dataloader, build_dataset
@@ -102,6 +102,13 @@ def main():
 
     # build the model and load checkpoint
     model = build_architecture(cfg.model)
+    # for k in model.state_dict().keys():
+    #     print(k)
+    # print("-------------------------------------")
+    # model.init_weights()
+    # for k in model.state_dict().keys():
+    #     print(k)
+    
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)

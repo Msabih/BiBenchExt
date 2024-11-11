@@ -29,7 +29,7 @@ def single_gpu_test(model, data_loader):
         from mmcls.apis import single_gpu_test, multi_gpu_test
         return single_gpu_test(model, data_loader)
     elif repo == 'bispeech':
-        from bispeech.apis import single_gpu_test as task_single_gpu_test
+        from mmcls.apis import single_gpu_test as task_single_gpu_test
         return task_single_gpu_test(model, data_loader)
     else:
         raise NotImplementedError()

@@ -1,4 +1,5 @@
 import torch
+from math import ceil
 import torch.nn as nn
 import torch.nn.functional as F
 from .coding import *
@@ -25,8 +26,8 @@ class CBNNConv2d(nn.Module):
         self.shape = (out_channels, in_channels, kernel_size, kernel_size)
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.002 - 0.001, requires_grad=True)
         #self.coder = BinaryCodebook(k_bits=self.k_bits)
-        self.register_buffer('codebook', None)
-        self.register_buffer('encoded_vector', None)
+        self.register_buffer('codebook', torch.empty(256,k_bits))
+        self.register_buffer('encoded_vector', torch.empty(ceil(self.number_of_weights/k_bits)))
         self.first_iter=True
 
     def forward(self, x):
@@ -50,7 +51,7 @@ class CBNNConv2d(nn.Module):
             
             return y
         else:
-            if self.first_iter:
+            if self.first_iter and self.codebook.numel() == 0:
                 self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
@@ -80,10 +81,10 @@ class CBNNConv1d(nn.Module):
         self.number_of_weights = in_channels * out_channels * kernel_size
         self.shape = (out_channels, in_channels, kernel_size)
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.002 - 0.001, requires_grad=True)
-        self.register_buffer('codebook', None)
-        self.register_buffer('encoded_vector', None)
+        self.register_buffer('codebook', torch.empty(256,k_bits))
+        self.register_buffer('encoded_vector', torch.empty(ceil(self.number_of_weights/k_bits)))
         self.first_iter=True
-
+         
     def forward(self, x):
         if self.training:
             if self.first_iter:
@@ -104,7 +105,7 @@ class CBNNConv1d(nn.Module):
             y = F.conv1d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
             return y
         else:
-            if self.first_iter:
+            if self.first_iter and self.codebook.numel() == 0:
                 self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
