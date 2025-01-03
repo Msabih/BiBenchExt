@@ -24,17 +24,25 @@ class BNNConv2d(nn.Module):
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.001, requires_grad=True)
 
     def forward(self, x):
-        binary_input_no_grad = torch.sign(x)
-        cliped_input = torch.clamp(x, -1.0, 1.0)
-        x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
+        if self.training:
+            binary_input_no_grad = torch.sign(x)
+            cliped_input = torch.clamp(x, -1.0, 1.0)
+            x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
 
-        real_weights = self.weight.view(self.shape)
-        binary_weights_no_grad = torch.sign(real_weights)
-        cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
-        binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
-        y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
+            real_weights = self.weight.view(self.shape)
+            binary_weights_no_grad = torch.sign(real_weights)
+            cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
+            binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
+            y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
 
-        return y
+            return y
+        else:
+            x = torch.sign(x)
+            #real_weights = self.weight.view(self.shape)
+            #binary_weights = torch.sign(real_weights)
+            y = F.conv2d(x, self.weight, stride=self.stride, padding=self.padding,bias=self.bias)
+            return y
+
 
 
 class BNNConv1d(nn.Module):
@@ -54,17 +62,25 @@ class BNNConv1d(nn.Module):
         self.weight = nn.Parameter(torch.rand(*self.shape) * 0.001, requires_grad=True)
 
     def forward(self, x):
-        binary_input_no_grad = torch.sign(x)
-        cliped_input = torch.clamp(x, -1.0, 1.0)
-        x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
+        if self.training:
+            binary_input_no_grad = torch.sign(x)
+            cliped_input = torch.clamp(x, -1.0, 1.0)
+            x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
 
-        real_weights = self.weight.view(self.shape)
-        binary_weights_no_grad = torch.sign(real_weights)
-        cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
-        binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
-        y = F.conv1d(x, binary_weights, stride=self.stride, padding=self.padding)
+            real_weights = self.weight.view(self.shape)
+            binary_weights_no_grad = torch.sign(real_weights)
+            cliped_weights = torch.clamp(real_weights, -1.0, 1.0)
+            binary_weights = binary_weights_no_grad.detach() - cliped_weights.detach() + cliped_weights
+            y = F.conv1d(x, binary_weights, stride=self.stride, padding=self.padding)
 
-        return y
+            return y
+        else:
+            x = torch.sign(x)
+           # real_weights = self.weight.view(self.shape)
+            #binary_weights = torch.sign(real_weights)
+            y = F.conv1d(x, self.weight, stride=self.stride, padding=self.padding)
+            return y
+
 
 
 class BinaryQuantize(torch.autograd.Function):

@@ -22,4 +22,6 @@ class SimpleArchitecture(BaseModule):
         return self.arch.val_step(*args, **kwargs)
 
     def forward(self, *args, **kwargs):
+        if not kwargs:
+            kwargs = {"return_loss": False}
         return self.arch.forward(*args, **kwargs)

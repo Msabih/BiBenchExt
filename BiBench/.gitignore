@@ -5,3 +5,6 @@ __pycache__/
 .vscode/
 data/
 bibench/models/layers/test.ipynb
+work/
+results/
+**/__pycache__/
