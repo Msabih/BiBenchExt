@@ -37,7 +37,9 @@ class BNNConv2d(nn.Module):
 
             return y
         else:
-            x = torch.sign(x)
+            # x = torch.sign(x)
+            x = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
+
             #real_weights = self.weight.view(self.shape)
             #binary_weights = torch.sign(real_weights)
             y = F.conv2d(x, self.weight, stride=self.stride, padding=self.padding,bias=self.bias)
@@ -75,7 +77,8 @@ class BNNConv1d(nn.Module):
 
             return y
         else:
-            x = torch.sign(x)
+            # x = torch.sign(x)
+            x = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
            # real_weights = self.weight.view(self.shape)
             #binary_weights = torch.sign(real_weights)
             y = F.conv1d(x, self.weight, stride=self.stride, padding=self.padding)

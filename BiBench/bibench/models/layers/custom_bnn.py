@@ -55,7 +55,10 @@ class CBNNConv2d(nn.Module):
                 self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
-            x = torch.sign(x)
+            #x = torch.sign(x)
+            x = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
+            # print('ok')
+
             binary_weights = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
             y = F.conv2d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
             return y
@@ -109,7 +112,9 @@ class CBNNConv1d(nn.Module):
                 self.coder = BinaryCodebook(k_bits=self.k_bits)
                 self.codebook, self.encoded_vector = self.coder.process_weights(self.weight)
                 self.first_iter=False
-            x = torch.sign(x)
+            # x = torch.sign(x)
+            x = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
+            # print('ok')
             binary_weights = CodebookReplacer.weight_builder(self.codebook,self.encoded_vector,self.shape)
             y = F.conv1d(x, binary_weights, stride=self.stride, padding=self.padding,bias=self.bias)
             return y
