@@ -9,7 +9,7 @@ model = dict(
             #first_conv_cfg=dict(type='BNNConv2d'),
             conv2d_cfg=dict(type='BNNConv2d'),
             conv1d_cfg=dict(type='BNNConv1d'),
-            act_cfg=dict(type='Hardtanh')
+            act_cfg=dict(type='PReLU')
         ),
         init_cfg=dict(type='Pretrained', checkpoint='data/Pretrained/Google speech commands/epoch_200_fp.pth')
     )

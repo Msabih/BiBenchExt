@@ -2,7 +2,7 @@
 dataset_repo = 'bispeech'
 dataset_type='SpeechCommandDataset'
 n_mels=32
-data_prefix='C:/Users/Desktop/Downloads'
+data_prefix='data/datasets'
 num_classes=12
 version="speech_commands_v0.01"
 
