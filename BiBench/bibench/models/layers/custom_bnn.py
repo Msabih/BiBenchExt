@@ -39,7 +39,8 @@ class CBNNConv2d(nn.Module):
             else:
                 if random.random()>.9: 
                  self.encoded_vector=CodebookReplacer.replace_with_codebook( self.weight, self.codebook,self.coder)
-            binary_input_no_grad = torch.sign(x)
+            #binary_input_no_grad = torch.sign(x)
+            binary_input_no_grad = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
             cliped_input = torch.clamp(x, -1.0, 1.0)
             x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
 
@@ -97,7 +98,8 @@ class CBNNConv1d(nn.Module):
             else:
                 if random.random()>.9: 
                     self.encoded_vector=CodebookReplacer.replace_with_codebook( self.weight, self.codebook,self.coder)
-            binary_input_no_grad = torch.sign(x)
+            #binary_input_no_grad = torch.sign(x)
+            binary_input_no_grad = torch.where(x > 0, torch.tensor(1.0, device=x.device), torch.tensor(-1.0, device=x.device))
             cliped_input = torch.clamp(x, -1.0, 1.0)
             x = binary_input_no_grad.detach() - cliped_input.detach() + cliped_input
 
